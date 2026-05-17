@@ -1,0 +1,33 @@
+# Compiled binaries
+speedband.exe
+speedband
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go build cache
+/vendor/
+
+# Test binary
+*.test
+
+# Output of go coverage tool
+*.out
+
+# Generated test reports (user data, not source)
+reports/
+
+# Claude Code private config
+.claude/
+
+# Playwright / browser test artifacts
+.playwright-cli/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/

@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpeedBand</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="pu-bg">
+
+  <!-- ═══ TOPBAR ═══ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M3 12c4 0 4-6 8-6s4 12 8 12" stroke="#0a0c14" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">SpeedBand</div>
+        <div class="brand-tagline" data-i18n="brand.subtitle">Local bandwidth &amp; stability test</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="lang-toggle" aria-label="Language">
+        <button class="lang-btn active" type="button" data-language="en">EN</button>
+        <button class="lang-btn" type="button" data-language="ru">RU</button>
+      </div>
+      <div class="status-pill" id="serverStatus" data-i18n="status.serverChecking">Local server: checking</div>
+      <div class="status-pill" id="clientStatus" data-i18n="status.clientBrowser">Client: browser</div>
+      <button class="pu-btn icon-btn" id="copyUrlButton" type="button" data-i18n="button.copyUrl">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 4h9v9M15 9 4 20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Copy server URL
+      </button>
+    </div>
+  </header>
+
+  <main class="shell">
+
+    <!-- ═══ HERO CARD ═══ -->
+    <section class="pu-card hero-card">
+
+      <!-- Left: gauge -->
+      <div class="hero-gauge-col">
+        <div class="gauge-wrap" id="gaugeWrap" data-max="500">
+          <!-- pulse-extras.js injects SVG arc here as first child -->
+          <div class="gauge-overlay">
+            <div class="gauge-lbl" aria-hidden="true">DOWNLOAD</div>
+            <div class="gauge-value-wrap">
+              <h1 id="heroValue" class="gauge-num">Ready</h1>
+              <div class="gauge-unit" id="gaugeUnit" aria-hidden="true">Mbps</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: controls -->
+      <div class="hero-controls-col">
+        <p id="stageText" class="stage-text" data-i18n="stage.initial">This measures local network performance, not internet speed.</p>
+
+        <div class="scenario-block">
+          <label class="scenario-label" for="presetSelect" data-i18n="label.useCase">Use case</label>
+          <select id="presetSelect" class="pu-select">
+            <option value="general" data-i18n="preset.general">General realtime streaming</option>
+            <option value="vr"      data-i18n="preset.vr">VR streaming</option>
+            <option value="game"    data-i18n="preset.game">Game streaming</option>
+            <option value="nas"     data-i18n="preset.nas">NAS / media transfer</option>
+            <option value="custom"  data-i18n="preset.custom">Custom</option>
+          </select>
+        </div>
+
+        <div class="button-row">
+          <button class="pu-btn primary" id="startButton" type="button" data-i18n="button.start">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            Start calibration
+          </button>
+          <button class="pu-btn" id="quickButton" type="button" data-i18n="button.quick">Quick test</button>
+          <button class="pu-btn" id="fullButton"  type="button" data-i18n="button.full">Full stability test</button>
+          <button class="pu-btn ghost" id="advancedButton" type="button" data-i18n="button.advanced">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            Advanced
+          </button>
+          <button class="pu-btn danger hidden" id="stopButton" type="button" data-i18n="button.stop">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            Stop
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ SAME-PC WARNING ═══ -->
+    <section class="same-pc-warning hidden" id="samePcWarning" role="alert">
+      <div class="warn-icon" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 8v5m0 3h.01M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.7"/></svg>
+      </div>
+      <p data-i18n="warning.samePc">You are testing on the same PC. This measures loopback/browser/server performance, not real LAN/Wi-Fi performance. Open the LAN URL from another device for meaningful results.</p>
+    </section>
+
+    <!-- ═══ ADVANCED PANEL ═══ -->
+    <section class="advanced-panel hidden" id="advancedPanel">
+      <div class="adv-field">
+        <label for="latencySamplesInput" data-i18n="advanced.latencySamples">Latency samples</label>
+        <input id="latencySamplesInput" type="number" min="4" max="60" value="20">
+      </div>
+      <div class="adv-field">
+        <label for="downloadDurationInput" data-i18n="advanced.downloadMs">Download ms</label>
+        <input id="downloadDurationInput" type="number" min="1000" max="30000" value="6000">
+      </div>
+      <div class="adv-field">
+        <label for="uploadSizeInput" data-i18n="advanced.uploadMib">Upload MiB</label>
+        <input id="uploadSizeInput" type="number" min="4" max="256" value="96">
+      </div>
+      <div class="adv-field">
+        <label for="ladderDurationInput" data-i18n="advanced.ladderMs">Ladder ms per level</label>
+        <input id="ladderDurationInput" type="number" min="1000" max="10000" value="3000">
+      </div>
+    </section>
+
+    <!-- ═══ METRICS GRID ═══ -->
+    <section class="metrics-grid" aria-label="Current metrics" data-i18n-attr="aria-label:aria.metrics">
+
+      <article class="pu-card metric-card" style="--mc:#4fb8ff">
+        <div class="mc-bar"></div>
+        <div class="mc-head">
+          <div class="mc-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <span class="mc-name" data-i18n="metric.download">Download</span>
+        </div>
+        <div class="mc-value-row">
+          <span class="mc-num" id="downloadValue">--</span>
+          <span class="mc-unit">Mbps</span>
+        </div>
+        <div class="mc-spark" id="sparkDownload"></div>
+        <div class="metric-status" id="downloadStatus" data-i18n="status.notTested">Not tested</div>
+      </article>
+
+      <article class="pu-card metric-card" style="--mc:#4ad8a3">
+        <div class="mc-bar"></div>
+        <div class="mc-head">
+          <div class="mc-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 20V8m0 0-4 4m4-4 4 4M4 4h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <span class="mc-name" data-i18n="metric.upload">Upload</span>
+        </div>
+        <div class="mc-value-row">
+          <span class="mc-num" id="uploadValue">--</span>
+          <span class="mc-unit">Mbps</span>
+        </div>
+        <div class="mc-spark" id="sparkUpload"></div>
+        <div class="metric-status" id="uploadStatus" data-i18n="status.notTested">Not tested</div>
+      </article>
+
+      <article class="pu-card metric-card" style="--mc:#a77fff">
+        <div class="mc-bar"></div>
+        <div class="mc-head">
+          <div class="mc-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3-8 4 16 3-8h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="mc-name" data-i18n="metric.latency">Latency</span>
+        </div>
+        <div class="mc-value-row">
+          <span class="mc-num" id="latencyValue">--</span>
+          <span class="mc-unit">ms</span>
+        </div>
+        <div class="mc-spark" id="sparkLatency"></div>
+        <div class="metric-status" id="latencyStatus" data-i18n="status.notTested">Not tested</div>
+      </article>
+
+      <article class="pu-card metric-card" style="--mc:#ffb84a">
+        <div class="mc-bar"></div>
+        <div class="mc-head">
+          <div class="mc-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 6h4l2 12 2-18 2 12 2-6h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="mc-name" data-i18n="metric.jitter">Jitter</span>
+        </div>
+        <div class="mc-value-row">
+          <span class="mc-num" id="jitterValue">--</span>
+          <span class="mc-unit">ms</span>
+        </div>
+        <div class="mc-spark" id="sparkJitter"></div>
+        <div class="metric-status" id="jitterStatus" data-i18n="status.notTested">Not tested</div>
+      </article>
+
+      <article class="pu-card metric-card" style="--mc:#ff7ab8">
+        <div class="mc-bar"></div>
+        <div class="mc-head">
+          <div class="mc-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="mc-name" data-i18n="metric.loss">Packet loss</span>
+        </div>
+        <div class="mc-value-row">
+          <span class="mc-num" id="lossValue">--</span>
+          <span class="mc-unit">%</span>
+        </div>
+        <div class="mc-spark" id="sparkLoss"></div>
+        <div class="metric-status" id="lossStatus" data-i18n="status.notTested">Not tested</div>
+      </article>
+
+      <article class="pu-card metric-card" style="--mc:#5be0ad">
+        <div class="mc-bar"></div>
+        <div class="mc-head">
+          <div class="mc-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 12 18 8v3H6V8L2 12l4 4v-3h12v3l4-4Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="mc-name" data-i18n="metric.stability">Stability</span>
+        </div>
+        <div class="mc-value-row">
+          <span class="mc-num mc-num--stability" id="stabilityValue">--</span>
+        </div>
+        <div class="mc-spark" id="sparkStability"></div>
+        <div class="metric-status" id="stabilityStatus" data-i18n="status.notTested">Not tested</div>
+      </article>
+
+    </section>
+
+    <!-- ═══ CHART ═══ -->
+    <section class="pu-card chart-panel">
+      <div class="section-heading">
+        <div>
+          <h2 data-i18n="chart.title">Throughput over time</h2>
+          <p id="chartSubtitle" data-i18n="chart.subtitleAll">HTTP throughput and realtime ladder use separate scales.</p>
+        </div>
+        <div class="chart-tools">
+          <div class="chart-toggle" aria-label="Chart mode" data-i18n-attr="aria-label:aria.chartMode">
+            <button class="chart-mode-btn active" type="button" data-chart-mode="all"      data-i18n="chart.modeAll">All</button>
+            <button class="chart-mode-btn"        type="button" data-chart-mode="http">HTTP</button>
+            <button class="chart-mode-btn"        type="button" data-chart-mode="realtime" data-i18n="chart.modeRealtime">Realtime</button>
+          </div>
+          <div class="legend">
+            <span class="legend-item download" data-i18n="legend.download">Download</span>
+            <span class="legend-item upload"   data-i18n="legend.upload">Upload</span>
+            <span class="legend-item target"   data-i18n="legend.target">Target</span>
+            <span class="legend-item realtime" data-i18n="legend.receive">Receive</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="throughputChart" width="1200" height="360"></canvas>
+    </section>
+
+    <!-- ═══ LADDER ═══ -->
+    <section class="pu-card ladder-panel">
+      <div class="section-heading">
+        <div>
+          <h2 data-i18n="ladder.title">Bitrate ladder</h2>
+          <p data-i18n="ladder.subtitle">Realtime-safe bitrate is estimated from low percentile throughput, stalls and latency spikes.</p>
+        </div>
+        <div class="protocol-note" id="protocolNote" data-i18n="protocol.note">Realtime mode: WebSocket</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="table.status">Status</th>
+              <th data-i18n="table.target">Target</th>
+              <th data-i18n="table.actual">Actual receive</th>
+              <th data-i18n="table.loss">Packet loss</th>
+              <th data-i18n="table.jitter">Jitter</th>
+              <th data-i18n="table.p5">p5 throughput</th>
+              <th data-i18n="table.spike">Max spike</th>
+              <th data-i18n="table.queue">Queue warning</th>
+            </tr>
+          </thead>
+          <tbody id="ladderBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ RECOMMENDATION ═══ -->
+    <section class="pu-card recommendation-panel">
+      <div class="section-heading">
+        <div>
+          <h2 data-i18n="recommendation.title">Recommendation</h2>
+          <p data-i18n="recommendation.subtitle">Results estimate a stable bitrate range. Real streaming apps may still behave differently depending on codec, device decoding, CPU/GPU load and Wi-Fi conditions.</p>
+        </div>
+      </div>
+      <div class="recommendation-grid">
+        <div class="rec-card">
+          <div class="rec-head">
+            <div class="rec-icon rec-icon--safe"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <span data-i18n="recommendation.verySafe">Very safe</span>
+          </div>
+          <strong id="verySafeValue" class="rec-value">--</strong>
+        </div>
+        <div class="rec-card rec-card--pick">
+          <div class="rec-head">
+            <div class="rec-icon rec-icon--rec"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2 14.39 8.25H21l-5.3 4 2 6.5L12 14.77 6.3 18.75l2-6.5L3 8.25h6.61L12 2Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <span data-i18n="recommendation.recommended">Recommended</span>
+          </div>
+          <strong id="recommendedValue" class="rec-value">--</strong>
+        </div>
+        <div class="rec-card">
+          <div class="rec-head">
+            <div class="rec-icon rec-icon--risky"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 9v4m0 4h.01M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0Z" stroke="currentColor" stroke-width="1.7"/></svg></div>
+            <span data-i18n="recommendation.risky">Risky upper</span>
+          </div>
+          <strong id="riskyValue" class="rec-value">--</strong>
+        </div>
+        <div class="rec-card">
+          <div class="rec-head">
+            <div class="rec-icon rec-icon--avoid"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+            <span data-i18n="recommendation.avoid">Avoid</span>
+          </div>
+          <strong id="avoidValue" class="rec-value">--</strong>
+        </div>
+      </div>
+      <ul class="why-list" id="whyList">
+        <li data-i18n="why.full">Use the full stability test before choosing a high bitrate.</li>
+        <li data-i18n="why.peak">Peak speed is not a safe streaming bitrate.</li>
+      </ul>
+    </section>
+
+    <!-- ═══ REPORT ═══ -->
+    <section class="pu-card report-panel">
+      <div class="section-heading">
+        <div>
+          <h2 data-i18n="report.title">Report</h2>
+          <p data-i18n="report.subtitle">Copy a readable summary or download a local JSON report. Save report to server stores a readable log on the PC running SpeedBand.</p>
+        </div>
+        <div class="report-buttons">
+          <button class="pu-btn" id="copyReportButton" type="button" data-i18n="button.copyReport">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 4h10v14M4 8h10v12H4z" stroke="currentColor" stroke-width="1.7"/></svg>
+            Copy report
+          </button>
+          <button class="pu-btn" id="downloadJsonButton" type="button" data-i18n="button.downloadJson">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Download JSON
+          </button>
+          <button class="pu-btn" id="saveReportButton" type="button" disabled data-i18n="button.saveServer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 9a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v6a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9Z" stroke="currentColor" stroke-width="1.7"/></svg>
+            Save to server
+          </button>
+          <button class="pu-btn ghost" id="detailsButton" type="button" data-i18n="button.showDetails">Technical details</button>
+        </div>
+      </div>
+      <p class="report-save-status" id="reportSaveStatus" data-i18n="report.saveHint">Save report to server stores a readable log on the PC running SpeedBand.</p>
+      <pre id="reportText" data-i18n="report.empty">No test has been run yet.</pre>
+      <pre class="technical-details hidden" id="technicalDetails">{}</pre>
+    </section>
+
+    <!-- ═══ NOTES ═══ -->
+    <section class="notes-panel">
+      <p data-i18n="notes.local">This measures local network performance, not internet speed.</p>
+      <p data-i18n="notes.full">Use the full stability test before choosing a high bitrate. Peak speed is not a safe streaming bitrate.</p>
+      <p data-i18n="notes.transport">Realtime tests use a binary WebSocket stream with paced sender, sequence numbers and backpressure tracking.</p>
+    </section>
+
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+<script src="/static/pulse-extras.js"></script>
+</body>
+</html>

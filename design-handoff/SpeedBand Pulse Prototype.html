@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpeedBand · Pulse Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #0b0d12; color: #e7edf5; font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif; }
+    #root { min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="concept-pulse.jsx"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const { PulseScreen } = window;
+    const { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakToggle, TweakSelect, TweakButton } = window;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "state": "complete",
+      "language": "ru",
+      "showWarning": true,
+      "accent": "spectrum",
+      "compact": false
+    }/*EDITMODE-END*/;
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const [runState, setRunState] = useState(t.state);
+      const timersRef = useRef([]);
+
+      // Sync tweak->run when tweak changes (e.g., user picks state in panel).
+      useEffect(() => { setRunState(t.state); }, [t.state]);
+
+      // Clear pending timers.
+      const clearTimers = () => { timersRef.current.forEach(clearTimeout); timersRef.current = []; };
+      useEffect(() => clearTimers, []);
+
+      // Animated test sequence triggered by hero Start button.
+      const handleStateChange = (next) => {
+        clearTimers();
+        if (next === 'testing') {
+          setRunState('testing'); setTweak('state', 'testing');
+          // After 3.5s show complete
+          timersRef.current.push(setTimeout(() => {
+            setRunState('complete'); setTweak('state', 'complete');
+          }, 3500));
+        } else {
+          setRunState(next); setTweak('state', next);
+        }
+      };
+
+      // Accent override — re-skin gauge / hero gradients on the fly.
+      const accentVars = {
+        spectrum: { '--pulse-grad': 'linear-gradient(135deg,#7ad6ff 0%, #a77fff 55%, #ff7ab8 100%)', '--pulse-accent': '#a77fff', '--pulse-accent-soft': 'rgba(167,127,255,0.18)' },
+        ocean:    { '--pulse-grad': 'linear-gradient(135deg,#5ec7ec 0%, #4a8df0 60%, #6f6fff 100%)', '--pulse-accent': '#5ec7ec', '--pulse-accent-soft': 'rgba(94,199,236,0.18)' },
+        forest:   { '--pulse-grad': 'linear-gradient(135deg,#9fe5b8 0%, #4ad8a3 55%, #2e9f86 100%)', '--pulse-accent': '#4ad8a3', '--pulse-accent-soft': 'rgba(74,216,163,0.20)' },
+        ember:    { '--pulse-grad': 'linear-gradient(135deg,#ffd58a 0%, #ff9a64 55%, #ff6b78 100%)', '--pulse-accent': '#ff9a64', '--pulse-accent-soft': 'rgba(255,154,100,0.18)' },
+      };
+
+      return (
+        <div style={{ ...(accentVars[t.accent] || {}), minHeight: '100vh' }}>
+          <style>{`
+            ${t.accent !== 'spectrum' ? `
+              .pu-btn.primary{ background: var(--pulse-grad) !important; }
+              [data-pulse-accent-fill]{ background: var(--pulse-grad) !important; }
+            ` : ''}
+            ${t.compact ? `
+              .pu-card{ border-radius: 14px !important; }
+              .pu-bg > div:nth-child(2){ padding-top: 18px !important; padding-bottom: 36px !important; }
+              h1{ font-size: 32px !important; }
+              h2{ font-size: 20px !important; }
+            ` : ''}
+            html, body{ overflow-x: hidden; }
+          `}</style>
+
+          <PulseScreen
+            stateKey={runState}
+            onStateChange={handleStateChange}
+            language={t.language}
+            showWarning={t.showWarning}
+            accent={t.accent}
+          />
+
+          <TweaksPanel title="Tweaks · Pulse">
+            <TweakSection label="Demo state" />
+            <TweakRadio
+              label="Run state"
+              value={t.state}
+              options={['idle', 'testing', 'complete', 'warning']}
+              onChange={(v) => setTweak('state', v)}
+            />
+            <TweakButton onClick={() => handleStateChange('testing')} label="▶ Simulate test run" />
+
+            <TweakSection label="Look &amp; feel" />
+            <TweakSelect
+              label="Accent palette"
+              value={t.accent}
+              options={[
+                { value: 'spectrum', label: 'Spectrum (cyan→purple→pink)' },
+                { value: 'ocean',    label: 'Ocean (cool blues)' },
+                { value: 'forest',   label: 'Forest (mint greens)' },
+                { value: 'ember',    label: 'Ember (warm coral)' },
+              ]}
+              onChange={(v) => setTweak('accent', v)}
+            />
+            <TweakToggle
+              label="Compact spacing"
+              value={t.compact}
+              onChange={(v) => setTweak('compact', v)}
+            />
+
+            <TweakSection label="Content" />
+            <TweakRadio
+              label="Language"
+              value={t.language}
+              options={['en', 'ru']}
+              onChange={(v) => setTweak('language', v)}
+            />
+            <TweakToggle
+              label="Same-PC warning"
+              value={t.showWarning}
+              onChange={(v) => setTweak('showWarning', v)}
+            />
+          </TweaksPanel>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
