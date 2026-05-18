@@ -839,9 +839,7 @@ function runWebSocketLevel(targetMbps, durationMs) {
     const abortHandler = () => {
       try {
         ws.close();
-      } catch (err) {
-        // ignored
-      }
+      } catch (_) {}
       reject(new DOMException("aborted", "AbortError"));
     };
     state.abort.signal.addEventListener("abort", abortHandler, { once: true });

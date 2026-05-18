@@ -1,6 +1,9 @@
 # Compiled binaries
-speedband.exe
-speedband
+/speedband.exe
+/speedband
+speedband-linux-*
+speedband-macos-*
+speedband-windows-*
 *.exe
 *.dll
 *.so

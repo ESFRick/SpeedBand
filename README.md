@@ -2,12 +2,12 @@
 
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform: Windows](https://img.shields.io/badge/Platform-Windows-blue)](https://github.com/ESFRick/SpeedBand/releases)
+[![Platform: Windows | Linux | macOS](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)](https://github.com/ESFRick/SpeedBand/releases)
 [![Download](https://img.shields.io/github/v/release/ESFRick/SpeedBand?label=Download&color=brightgreen)](https://github.com/ESFRick/SpeedBand/releases/latest)
 
 **[English](README.md) | [Русский](README.ru.md)**
 
-Local network bandwidth and stability tester. Measures latency, jitter, throughput and realtime bitrate between two devices on the same LAN — no internet speedtest server, no telemetry, no install on the second device.
+Diagnose whether your LAN is stable enough for realtime streaming. Measures latency, jitter and low-percentile throughput via browser - no install on the second device, no telemetry.
 
 ![SpeedBand demo](docs/demo.gif)
 
@@ -16,10 +16,12 @@ Local network bandwidth and stability tester. Measures latency, jitter, throughp
 ## Table of contents
 
 - [What SpeedBand does](#what-speedband-does)
+- [Why not iperf3?](#why-not-iperf3)
 - [Use cases](#use-cases)
+- [Results](#results)
 - [Quick start](#quick-start)
 - [Connecting from another device](#connecting-from-another-device)
-- [Windows Firewall](#windows-firewall)
+- [Firewall](#firewall)
 - [Reading results](#reading-results)
 - [Reports](#reports)
 - [Recommended test conditions](#recommended-test-conditions)
@@ -29,7 +31,7 @@ Local network bandwidth and stability tester. Measures latency, jitter, throughp
 
 ## What SpeedBand does
 
-Runs a small HTTP server on your Windows PC. Another device opens the page in a browser and runs a full test sequence:
+Runs a small HTTP server on your machine. Another device opens the page in a browser and runs a full test sequence:
 
 1. Latency and jitter (`/api/ping`)
 2. HTTP download throughput (`/api/download`)
@@ -39,6 +41,14 @@ Runs a small HTTP server on your Windows PC. Another device opens the page in a 
 All traffic stays inside the LAN. Results include a stable bitrate range with headroom levels, a quality label and a bitrate ladder breakdown.
 
 **Peak speed is not a safe streaming bitrate.** SpeedBand uses low-percentile throughput, jitter and stall detection to estimate a safe operating range.
+
+---
+
+## Why not iperf3?
+
+iperf3 requires installation on both devices and reports raw TCP throughput - not what matters for streaming.
+
+SpeedBand runs as a single binary or `go run`. The second device only needs a browser. It measures what streaming actually uses: low-percentile throughput, jitter, stall detection and realtime bitrate stability across a stepped ladder. The output is a safe bitrate range with headroom levels, not just a peak number.
 
 ---
 
@@ -52,13 +62,31 @@ All traffic stays inside the LAN. Results include a stable bitrate range with he
 
 ---
 
+## Results
+
+<img src="docs/screenshot.jpg" width="800" alt="SpeedBand results">
+
+<img src="docs/screenshot2.jpg" width="800" alt="SpeedBand results detail">
+
+---
+
 ## Quick start
+
+**Windows (PowerShell):**
 
 ```powershell
 go run ./cmd/speedband
 ```
 
+**Linux / macOS:**
+
+```bash
+go run ./cmd/speedband
+```
+
 Build a standalone executable:
+
+**Windows:**
 
 ```powershell
 go build -o speedband.exe ./cmd/speedband
@@ -66,7 +94,15 @@ go build -o speedband.exe ./cmd/speedband
 .\scripts\build-windows.ps1
 ```
 
-Open the LAN URL printed in the console on any device in the same network. No app install required on the second device — browser only.
+**Linux / macOS:**
+
+```bash
+go build -o speedband ./cmd/speedband
+# or
+bash scripts/build.sh
+```
+
+Open the LAN URL printed in the console on any device in the same network. No app install required on the second device - browser only.
 
 ### Flags
 
@@ -81,7 +117,7 @@ Open the LAN URL printed in the console on any device in the same network. No ap
 
 ## Connecting from another device
 
-1. Start SpeedBand on the PC.
+1. Start SpeedBand on the host machine.
 2. Use the LAN URL printed in the console, e.g. `http://192.168.1.25:8080`.
 3. If `.local` hostname does not resolve, use the numeric IP.
 4. On Meta Quest, open the URL in the headset browser.
@@ -90,14 +126,14 @@ The console prints all LAN IP candidates and marks the primary guess. Docker, VM
 
 ---
 
-## Windows Firewall
-
-When prompted, allow access on **Private networks**.
+## Firewall
 
 If the page does not open from another device:
 
 - Confirm both devices are on the same subnet.
-- Allow `speedband.exe` or `go.exe` on Private networks in Windows Firewall.
+- **Windows:** when prompted, allow access on **Private networks**. If not prompted, allow `speedband.exe` or `go.exe` in Windows Firewall for Private networks.
+- **Linux:** ensure the port is open (`sudo ufw allow 8080/tcp` for UFW-based distros).
+- **macOS:** allow incoming connections when prompted by the OS firewall dialog.
 - Try the numeric IP instead of `.local`.
 - Disable VPN temporarily.
 
@@ -130,8 +166,8 @@ Quality labels:
 
 ## Reports
 
-- **Download JSON** — saves report on the client device.
-- **Save to server** — sends report to the PC; saves a `.log` file in `reports/` under the server working directory.
+- **Download JSON** - saves report on the client device.
+- **Save to server** - sends report to the machine; saves a `.log` file in `reports/` under the server working directory.
 
 UI supports English and Russian. Reports use the language selected in the browser at save time.
 
