@@ -4,217 +4,167 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows-blue)](https://github.com/ESFRick/SpeedBand/releases)
 
-SpeedBand is a local bandwidth and stability calibrator, not an internet speed test.
+**[English](README.md) | [Русский](README.ru.md)**
 
-It runs a small local HTTP server on your Windows PC and lets another device in the same LAN open a browser page. The browser runs latency, jitter, HTTP download, HTTP upload and WebSocket realtime bitrate tests, then estimates a stable bitrate range.
+Local network bandwidth and stability tester. Measures latency, jitter, throughput and realtime bitrate between two devices on the same LAN — no internet speedtest server, no telemetry, no install on the second device.
 
-This measures local network performance, not internet speed.
+![SpeedBand demo](docs/demo.gif)
 
-Results estimate a stable bitrate range. Real streaming apps may still behave differently depending on codec, device decoding, CPU/GPU load and Wi-Fi conditions.
+---
 
-Use the full stability test before choosing a high bitrate.
+## Table of contents
 
-Peak speed is not a safe streaming bitrate.
+- [What SpeedBand does](#what-speedband-does)
+- [Use cases](#use-cases)
+- [Quick start](#quick-start)
+- [Connecting from another device](#connecting-from-another-device)
+- [Windows Firewall](#windows-firewall)
+- [Reading results](#reading-results)
+- [Reports](#reports)
+- [Recommended test conditions](#recommended-test-conditions)
+- [Why not use an internet speedtest?](#why-not-use-an-internet-speedtest)
+- [Limitations](#limitations)
+- [License](#license)
 
-## What is SpeedBand?
+---
 
-SpeedBand measures local network bandwidth, stability, latency, jitter and bitrate headroom between two devices on the same local network.
+## What SpeedBand does
 
-The test traffic stays inside your LAN:
+Runs a small HTTP server on your Windows PC. Another device opens the page in a browser and runs a full test sequence:
 
-- the main PC runs `speedband.exe` or `go run ./cmd/speedband`;
-- the second device opens the SpeedBand page in a browser;
-- no internet speedtest server is used;
-- no telemetry or report upload is performed.
+1. Latency and jitter (`/api/ping`)
+2. HTTP download throughput (`/api/download`)
+3. HTTP upload throughput (`/api/upload`)
+4. WebSocket realtime bitrate ladder (`/api/ws`)
 
-## What it is useful for
+All traffic stays inside the LAN. Results include a stable bitrate range with headroom levels, a quality label and a bitrate ladder breakdown.
 
-SpeedBand is useful for:
+**Peak speed is not a safe streaming bitrate.** SpeedBand uses low-percentile throughput, jitter and stall detection to estimate a safe operating range.
 
-- realtime streaming bitrate checks;
-- game streaming;
-- VR streaming;
-- Moonlight/Sunshine, Steam Link, Air Link, Virtual Desktop and ALVR diagnostics;
-- NAS and media transfer checks;
-- Wi-Fi diagnostics;
-- LAN testing between a PC, phone, tablet, laptop, headset or Steam Deck;
-- finding whether peak throughput is hiding jitter, stalls or unstable low-percentile throughput.
+---
 
-It is not a VR-only tool. VR is only one use case.
+## Use cases
 
-## How to run
+- Game and VR streaming (Moonlight/Sunshine, Steam Link, Air Link, Virtual Desktop, ALVR)
+- NAS and media transfer checks
+- Wi-Fi diagnostics
+- LAN testing between PC, phone, tablet, laptop, headset or Steam Deck
+- Finding whether peak throughput hides jitter, stalls or unstable low-percentile results
 
-From the project root:
+---
+
+## Quick start
 
 ```powershell
 go run ./cmd/speedband
 ```
 
-Build a Windows-friendly executable:
+Build a standalone executable:
 
 ```powershell
 go build -o speedband.exe ./cmd/speedband
+# or
+.\scripts\build-windows.ps1
 ```
 
-Command-line options:
+Open the LAN URL printed in the console on any device in the same network. No app install required on the second device — browser only.
 
-```text
---host 0.0.0.0
---port 8080
---open false
---debug false
-```
+### Flags
 
-Defaults:
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--host` | `0.0.0.0` | Listen address |
+| `--port` | `8080` | Listen port |
+| `--open` | `false` | Auto-open browser on start |
+| `--debug` | `false` | Verbose logging |
 
-- host: `0.0.0.0`
-- port: `8080`
-- debug: `false`
+---
 
-## How to open from another device
+## Connecting from another device
 
-1. Make sure both devices are connected to the same local network.
-2. Start SpeedBand on the PC.
-3. Use the LAN URL printed in the console, for example `http://192.168.1.25:8080`.
-4. If a `.local` hostname is shown but does not work, use the IP address.
-5. On Meta Quest, open the LAN URL in the headset browser.
-6. Press `Start calibration`, `Quick test` or `Full stability test`.
+1. Start SpeedBand on the PC.
+2. Use the LAN URL printed in the console, e.g. `http://192.168.1.25:8080`.
+3. If `.local` hostname does not resolve, use the numeric IP.
+4. On Meta Quest, open the URL in the headset browser.
 
-The console prints all LAN IP candidates it can find and marks one as a primary guess. Docker, VM and VPN adapters are filtered or marked when possible, but use the address that belongs to your real LAN adapter.
+The console prints all LAN IP candidates and marks the primary guess. Docker, VM and VPN adapters are filtered or flagged where possible.
+
+---
 
 ## Windows Firewall
 
-When Windows Firewall asks, allow access on Private networks.
+When prompted, allow access on **Private networks**.
 
-If the page does not open from your phone, Quest or laptop:
+If the page does not open from another device:
 
-- check that the PC and the second device are on the same Wi-Fi/LAN;
-- allow `speedband.exe` or `go.exe` on Private networks;
-- try the numeric LAN IP instead of `.local`;
-- do not allow Public network access unless you understand the risk.
+- Confirm both devices are on the same subnet.
+- Allow `speedband.exe` or `go.exe` on Private networks in Windows Firewall.
+- Try the numeric IP instead of `.local`.
+- Disable VPN temporarily.
 
-SpeedBand listens on `0.0.0.0` by default so other devices in the LAN can open the page. Run it only in a trusted local network.
+SpeedBand listens on `0.0.0.0` by default. Run it only on a trusted local network.
 
-## Why not use internet speedtest?
+---
 
-An internet speedtest measures the path from your device to an external server. Local streaming usually travels between two devices inside your LAN. A fast internet result does not prove that your router, Wi-Fi band, client device or local link can sustain a realtime bitrate without jitter, stalls or queue growth.
+## Reading results
 
-SpeedBand is closer to local streaming because the test traffic stays between your PC and the browser device.
+Bitrate range levels:
 
-## Accuracy notes
-
-SpeedBand is more useful than a normal internet speedtest for local streaming scenarios, but it is still an estimate.
-
-Real streaming apps may behave differently because results also depend on:
-
-- codec and encoder settings;
-- device decoder performance;
-- CPU/GPU load;
-- Wi-Fi interference;
-- router behavior;
-- buffering strategy;
-- packet loss;
-- jitter;
-- the transport used by Virtual Desktop, Steam Link, Air Link, ALVR, Moonlight or another app.
-
-For lab-style network measurement, `iperf3` can be a stronger reference, but it requires installing a client on both devices. SpeedBand only requires a browser on the second device.
-
-## How to interpret results
-
-SpeedBand reports ranges instead of exact values:
-
-- Very safe: conservative level with extra headroom.
-- Recommended: practical stable bitrate range.
-- Risky upper: may work, but showed reduced headroom or spikes.
-- Avoid: levels above this are not recommended without real-app validation.
+| Level | Meaning |
+|-------|---------|
+| Very safe | Conservative estimate with extra headroom |
+| Recommended | Practical stable operating range |
+| Risky upper | May work; showed reduced headroom or spikes |
+| Avoid | Not recommended without real-app validation |
 
 Quality labels:
 
-- Excellent: strong low-percentile throughput and low jitter/spikes.
-- Good: likely suitable for many realtime tasks.
-- Acceptable: usable, but leave headroom.
-- Risky: unstable enough to require caution.
-- Unstable: not suitable for high bitrate realtime use.
+| Label | Meaning |
+|-------|---------|
+| Excellent | Strong low-percentile throughput, low jitter |
+| Good | Suitable for most realtime tasks |
+| Acceptable | Usable; leave headroom |
+| Risky | Unstable enough to require caution |
+| Unstable | Not suitable for high bitrate realtime use |
 
-Do not choose a bitrate from peak speed. Use the recommendation panel and the ladder details.
+---
 
-## Saving reports on the server
+## Reports
 
-The report panel has two report options:
+- **Download JSON** — saves report on the client device.
+- **Save to server** — sends report to the PC; saves a `.log` file in `reports/` under the server working directory.
 
-- `Download JSON report` saves the report on the client device or browser that opened SpeedBand.
-- `Save report to server` sends the report data back to the PC running SpeedBand and saves a readable `.log` file in `reports/` under the server working directory.
+UI supports English and Russian. Reports use the language selected in the browser at save time.
 
-The server-side log includes the measured results, recommendation and bitrate ladder in a readable text format.
+---
 
-The UI language switch supports English and Russian. English is the default; reports saved to the server use the language selected in the browser at the time of saving.
+## Recommended test conditions
 
-This works only inside your local network. Reports are not uploaded to the internet.
-
-## Recommended testing conditions
-
-- Connect the PC to the router with Ethernet when possible.
-- Avoid 2.4 GHz for high bitrate streaming.
+- Connect the PC to the router with Ethernet.
 - Use 5 GHz or 6 GHz Wi-Fi for the second device.
-- Keep the headset/phone/laptop near the router for the first test.
 - Close active downloads, cloud sync and game updates.
-- Run 2-3 tests at different times.
-- Use the Full stability test before choosing a high bitrate.
+- Run the Full stability test before choosing a high bitrate.
+- Repeat 2–3 times; trust the more conservative result.
 
-## Troubleshooting
+---
 
-Page does not open from phone/Quest:
+## Why not use an internet speedtest?
 
-- confirm both devices are in the same subnet;
-- check Windows Firewall Private network access;
-- try each LAN IP printed by SpeedBand;
-- disable VPN temporarily.
+An internet speedtest measures the path to an external server. Local streaming travels between two devices inside the LAN. A fast internet result does not prove that the router, Wi-Fi band, or local link can sustain a realtime bitrate without jitter or stalls.
 
-`.local` does not work:
+For reference-grade LAN measurement, `iperf3` is stronger — but requires a client install on both devices. SpeedBand requires only a browser on the second device.
 
-- use the numeric IP address;
-- some routers and Windows setups do not provide reliable mDNS/hostname resolution.
-
-Speed is good but streaming still stutters:
-
-- lower bitrate and test the real app;
-- check device decoder load, GPU load, codec settings and Wi-Fi interference;
-- try a stricter preset such as Game streaming or VR streaming.
-
-Results change between runs:
-
-- Wi-Fi airtime and interference vary;
-- repeat tests and trust the more conservative result.
-
-2.4 GHz vs 5 GHz/6 GHz:
-
-- 2.4 GHz often has lower throughput and higher interference;
-- 5 GHz/6 GHz is usually better for high bitrate realtime streaming.
-
-PC connected over Wi-Fi:
-
-- a Wi-Fi PC plus Wi-Fi client can double airtime pressure;
-- use Ethernet for the PC if possible.
-
-Wrong IP shown:
-
-- Docker, VM, VPN and WSL adapters can expose private IPs;
-- use the address belonging to your physical LAN adapter.
+---
 
 ## Limitations
 
-- The second device is browser-only; raw UDP sockets are not available.
-- One-way latency is not exact without clock synchronization.
-- WebSocket runs over TCP, so packet loss is inferred from sequence gaps and stalls rather than raw UDP loss.
-- The result is a bitrate range, not exact truth.
-- Real apps can still behave differently.
+- Browser-only second device; raw UDP sockets unavailable.
+- One-way latency is not exact without clock sync.
+- WebSocket runs over TCP; packet loss is inferred from sequence gaps and stalls, not raw UDP loss.
+- Result is a bitrate range estimate, not exact truth.
 
-## Implemented tests
+---
 
-- HTTP latency and jitter via `/api/ping`.
-- HTTP download throughput via `/api/download`.
-- HTTP upload throughput via `/api/upload`.
-- WebSocket binary realtime bitrate ladder via `/api/ws`.
-- JSON and human-readable reports in the UI.
+## License
 
-No external CDN, web font, telemetry, cloud backend, database or Electron runtime is used.
+MIT
