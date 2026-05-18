@@ -3,6 +3,7 @@
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows-blue)](https://github.com/ESFRick/SpeedBand/releases)
+[![Download](https://img.shields.io/github/v/release/ESFRick/SpeedBand?label=Download&color=brightgreen)](https://github.com/ESFRick/SpeedBand/releases/latest)
 
 **[English](README.md) | [Русский](README.ru.md)**
 
@@ -22,8 +23,6 @@ Local network bandwidth and stability tester. Measures latency, jitter, throughp
 - [Reading results](#reading-results)
 - [Reports](#reports)
 - [Recommended test conditions](#recommended-test-conditions)
-- [Why not use an internet speedtest?](#why-not-use-an-internet-speedtest)
-- [Limitations](#limitations)
 - [License](#license)
 
 ---
@@ -145,23 +144,6 @@ UI supports English and Russian. Reports use the language selected in the browse
 - Close active downloads, cloud sync and game updates.
 - Run the Full stability test before choosing a high bitrate.
 - Repeat 2–3 times; trust the more conservative result.
-
----
-
-## Why not use an internet speedtest?
-
-An internet speedtest measures the path to an external server. Local streaming travels between two devices inside the LAN. A fast internet result does not prove that the router, Wi-Fi band, or local link can sustain a realtime bitrate without jitter or stalls.
-
-For reference-grade LAN measurement, `iperf3` is stronger — but requires a client install on both devices. SpeedBand requires only a browser on the second device.
-
----
-
-## Limitations
-
-- Browser-only second device; raw UDP sockets unavailable.
-- One-way latency is not exact without clock sync.
-- WebSocket runs over TCP; packet loss is inferred from sequence gaps and stalls, not raw UDP loss.
-- Result is a bitrate range estimate, not exact truth.
 
 ---
 
