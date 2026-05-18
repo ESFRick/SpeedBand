@@ -1,6 +1,6 @@
 # SpeedBand
 
-[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Windows | Linux | macOS](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)](https://github.com/ESFRick/SpeedBand/releases)
 [![Download](https://img.shields.io/github/v/release/ESFRick/SpeedBand?label=Download&color=brightgreen)](https://github.com/ESFRick/SpeedBand/releases/latest)
