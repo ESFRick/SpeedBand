@@ -22,8 +22,13 @@ dist/
 # Generated test reports (user data, not source)
 reports/
 
-# Claude Code private config
+# AI assistant config files
 .claude/
+CLAUDE.md
+AGENTS.md
+COPILOT.md
+.cursorrules
+.aider*
 
 # Playwright / browser test artifacts
 .playwright-cli/
