@@ -4,6 +4,7 @@
 speedband-linux-*
 speedband-macos-*
 speedband-windows-*
+dist/
 *.exe
 *.dll
 *.so

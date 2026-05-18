@@ -72,37 +72,47 @@ SpeedBand runs as a single binary or `go run`. The second device only needs a br
 
 ## Quick start
 
-**Windows (PowerShell):**
+Download the binary for your platform from the [Releases page](https://github.com/ESFRick/SpeedBand/releases/latest) and run it.
+
+**Windows:** open a terminal in the folder with the downloaded file and run:
 
 ```powershell
-go run ./cmd/speedband
+.\speedband-windows-amd64.exe
 ```
 
-**Linux / macOS:**
+**Linux:**
 
 ```bash
-go run ./cmd/speedband
+chmod +x speedband-linux-amd64
+./speedband-linux-amd64
 ```
 
-Build a standalone executable:
+**macOS:**
+
+```bash
+chmod +x speedband-macos-arm64   # Apple Silicon
+./speedband-macos-arm64
+
+# or for Intel Macs:
+chmod +x speedband-macos-amd64
+./speedband-macos-amd64
+```
+
+Open the LAN URL printed in the terminal on any device in the same network. No app install required on the second device - browser only.
+
+### Build from source
 
 **Windows:**
 
 ```powershell
 go build -o speedband.exe ./cmd/speedband
-# or
-.\scripts\build-windows.ps1
 ```
 
 **Linux / macOS:**
 
 ```bash
 go build -o speedband ./cmd/speedband
-# or
-bash scripts/build.sh
 ```
-
-Open the LAN URL printed in the console on any device in the same network. No app install required on the second device - browser only.
 
 ### Flags
 
