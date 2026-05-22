@@ -16,7 +16,6 @@
     const wrap = $("gaugeWrap");
     if (!wrap) return;
 
-    const max      = parseFloat(wrap.dataset.max) || 500;
     const SIZE     = 280;
     const STROKE   = 14;
     const R        = SIZE / 2 - STROKE - 14;
@@ -152,6 +151,7 @@
     if (!heroEl) return;
 
     function update() {
+      const max = parseFloat(wrap.dataset.max) || 500;
       const text = heroEl.textContent.trim();
       // Pure number only — "238", "45.2". Recommendation strings like
       // "350-500 Mbps within tested range" are NOT pure numeric.

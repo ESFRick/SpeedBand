@@ -1,6 +1,18 @@
 "use strict";
 
-const ladderLevels = [25, 50, 75, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500];
+const ALL_LADDER_LEVELS = [25, 50, 75, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500, 600, 700, 750, 800, 900, 1000, 1200, 1500, 2000, 2500, 5000, 10000];
+
+function getMaxMbps() {
+  const v = el && el.maxBitrateInput ? parseInt(el.maxBitrateInput.value, 10) : 500;
+  return (Number.isFinite(v) && v >= 100) ? v : 500;
+}
+
+function effectiveLadderLevels() {
+  const max = getMaxMbps();
+  const levels = ALL_LADDER_LEVELS.filter(l => l <= max);
+  if (levels.length === 0 || levels[levels.length - 1] < max) levels.push(max);
+  return levels;
+}
 const qs = (id) => document.getElementById(id);
 
 const i18n = {
@@ -22,8 +34,7 @@ const i18n = {
     "button.copyUrl": "Copy server URL",
     "button.copied": "Copied",
     "button.start": "Start calibration",
-    "button.quick": "Quick test",
-    "button.full": "Full stability test",
+    "button.max": "Find max bandwidth",
     "button.advanced": "Advanced",
     "button.stop": "Stop",
     "button.copyReport": "Copy report",
@@ -42,6 +53,7 @@ const i18n = {
     "stage.uploadText": "Measuring local HTTP upload throughput...",
     "stage.realtime": "Realtime",
     "stage.realtimeText": "Testing bitrate ladder over WebSocket...",
+    "stage.maxText": "Scanning ladder until failures — finding bandwidth ceiling...",
     "stage.complete": "Complete",
     "stage.completeText": "Recommended streaming bitrate range is ready.",
     "stage.stopped": "Stopped",
@@ -57,6 +69,7 @@ const i18n = {
     "advanced.downloadMs": "Download ms",
     "advanced.uploadMib": "Upload MiB",
     "advanced.ladderMs": "Ladder ms per level",
+    "advanced.maxMbps": "Max Mbps",
     "metric.download": "Download",
     "metric.upload": "Upload",
     "metric.latency": "Latency",
@@ -175,8 +188,7 @@ const i18n = {
     "button.copyUrl": "Скопировать URL сервера",
     "button.copied": "Скопировано",
     "button.start": "Запустить калибровку",
-    "button.quick": "Быстрый тест",
-    "button.full": "Полный тест стабильности",
+    "button.max": "Найти макс. скорость",
     "button.advanced": "Настройки",
     "button.stop": "Остановить",
     "button.copyReport": "Скопировать отчёт",
@@ -195,6 +207,7 @@ const i18n = {
     "stage.uploadText": "Измеряем локальную HTTP-скорость отдачи...",
     "stage.realtime": "Реалтайм",
     "stage.realtimeText": "Проверяем лестницу битрейтов через WebSocket...",
+    "stage.maxText": "Сканируем лестницу до первых провалов — ищем потолок скорости...",
     "stage.complete": "Готово",
     "stage.completeText": "Рекомендованный диапазон битрейта готов.",
     "stage.stopped": "Остановлено",
@@ -210,6 +223,7 @@ const i18n = {
     "advanced.downloadMs": "Загрузка, мс",
     "advanced.uploadMib": "Отдача, МиБ",
     "advanced.ladderMs": "мс на уровень",
+    "advanced.maxMbps": "Макс. Мбит/с",
     "metric.download": "Загрузка",
     "metric.upload": "Отдача",
     "metric.latency": "Задержка",
@@ -338,8 +352,7 @@ const el = {
   stageText: qs("stageText"),
   presetSelect: qs("presetSelect"),
   startButton: qs("startButton"),
-  quickButton: qs("quickButton"),
-  fullButton: qs("fullButton"),
+  maxButton: qs("maxButton"),
   advancedButton: qs("advancedButton"),
   stopButton: qs("stopButton"),
   advancedPanel: qs("advancedPanel"),
@@ -347,6 +360,7 @@ const el = {
   downloadDurationInput: qs("downloadDurationInput"),
   uploadSizeInput: qs("uploadSizeInput"),
   ladderDurationInput: qs("ladderDurationInput"),
+  maxBitrateInput: qs("maxBitrateInput"),
   downloadValue: qs("downloadValue"),
   uploadValue: qs("uploadValue"),
   latencyValue: qs("latencyValue"),
@@ -394,8 +408,7 @@ async function init() {
 
 function bindEvents() {
   el.startButton.addEventListener("click", () => runCalibration("full"));
-  el.quickButton.addEventListener("click", () => runCalibration("quick"));
-  el.fullButton.addEventListener("click", () => runCalibration("full"));
+  el.maxButton.addEventListener("click", () => runCalibration("max"));
   el.advancedButton.addEventListener("click", () => el.advancedPanel.classList.toggle("hidden"));
   el.copyUrlButton.addEventListener("click", copyServerURL);
   el.copyReportButton.addEventListener("click", copyReport);
@@ -412,6 +425,11 @@ function bindEvents() {
     button.addEventListener("click", () => setChartMode(button.dataset.chartMode));
   });
   window.addEventListener("resize", drawChart);
+  el.maxBitrateInput.addEventListener("change", () => {
+    const wrap = qs("gaugeWrap");
+    if (wrap) wrap.dataset.max = String(getMaxMbps());
+    if (!state.running) initLadder();
+  });
 }
 
 function t(key, vars = {}) {
@@ -537,16 +555,7 @@ async function loadInfo() {
 }
 
 function initLadder() {
-  state.ladder = ladderLevels.map((level) => ({
-    targetMbps: level,
-    status: "Not tested",
-    actualReceiveMbps: 0,
-    packetLossPercent: 0,
-    jitterMs: 0,
-    p5ThroughputMbps: 0,
-    maxLatencySpikeMs: 0,
-    backpressureWarning: false
-  }));
+  state.ladder = [];
   renderLadder();
 }
 
@@ -584,17 +593,19 @@ async function runCalibration(mode) {
     state.metrics.latency = latency;
     updateLatencyCards(latency);
 
-    setStage("stage.download", "stage.downloadText");
-    const download = await runDownload(config.downloadDurationMs);
-    state.metrics.download = download;
-    updateThroughputCard("download", download);
+    if (mode !== "max") {
+      setStage("stage.download", "stage.downloadText");
+      const download = await runDownload(config.downloadDurationMs);
+      state.metrics.download = download;
+      updateThroughputCard("download", download);
 
-    setStage("stage.upload", "stage.uploadText");
-    const upload = await runUpload(config.uploadBytes);
-    state.metrics.upload = upload;
-    updateThroughputCard("upload", upload);
+      setStage("stage.upload", "stage.uploadText");
+      const upload = await runUpload(config.uploadBytes);
+      state.metrics.upload = upload;
+      updateThroughputCard("upload", upload);
+    }
 
-    setStage("stage.realtime", "stage.realtimeText");
+    setStage("stage.realtime", mode === "max" ? "stage.maxText" : "stage.realtimeText");
     const ladder = await runBitrateLadder(config, latency);
     state.ladder = ladder;
     renderLadder();
@@ -631,17 +642,17 @@ function calibrationConfig(mode, preset) {
       downloadDurationMs: clamp(numberFrom(el.downloadDurationInput.value, 6000), 1000, 30000),
       uploadBytes: clamp(numberFrom(el.uploadSizeInput.value, 96), 4, 256) * 1024 * 1024,
       ladderDurationMs: clamp(numberFrom(el.ladderDurationInput.value, 3000), 1000, 10000),
-      ladderLevels: ladderLevels
+      ladderLevels: effectiveLadderLevels()
     };
   }
-  if (mode === "quick") {
+  if (mode === "max") {
     return {
       mode,
       latencySamples: 8,
-      downloadDurationMs: 2500,
-      uploadBytes: 24 * 1024 * 1024,
-      ladderDurationMs: 1400,
-      ladderLevels: [25, 50, 75, 100, 120, 150]
+      downloadDurationMs: 0,
+      uploadBytes: 0,
+      ladderDurationMs: 1500,
+      ladderLevels: ALL_LADDER_LEVELS
     };
   }
   return {
@@ -650,7 +661,7 @@ function calibrationConfig(mode, preset) {
     downloadDurationMs: 6000,
     uploadBytes: 96 * 1024 * 1024,
     ladderDurationMs: 3000,
-    ladderLevels
+    ladderLevels: effectiveLadderLevels()
   };
 }
 
@@ -782,23 +793,22 @@ async function runUpload(totalBytes) {
 }
 
 async function runBitrateLadder(config, latency) {
-  const result = ladderLevels.map((level) => ({
-    targetMbps: level,
-    status: config.ladderLevels.includes(level) ? "Not tested" : "Skipped",
-    actualReceiveMbps: 0,
-    packetLossPercent: 0,
-    jitterMs: 0,
-    p5ThroughputMbps: 0,
-    maxLatencySpikeMs: 0,
-    backpressureWarning: false
-  }));
+  const result = [];
+
+  function makeRow(level) {
+    return { targetMbps: level, status: "Not tested", actualReceiveMbps: 0, packetLossPercent: 0, jitterMs: 0, p5ThroughputMbps: 0, maxLatencySpikeMs: 0, backpressureWarning: false };
+  }
 
   let failures = 0;
   for (const target of config.ladderLevels) {
-    const row = result.find((item) => item.targetMbps === target);
+    const row = makeRow(target);
     row.status = "Testing";
+    result.push(row);
     renderLadder(result);
-    const test = await runWebSocketLevel(target, config.ladderDurationMs);
+    const test = await runWebSocketLevel(target, config.ladderDurationMs, (mbps) => {
+      row.actualReceiveMbps = mbps;
+      renderLadder(result);
+    });
     Object.assign(row, scoreLadderLevel(target, test, latency));
     renderLadder(result);
     if (row.status === "Failed") {
@@ -807,18 +817,13 @@ async function runBitrateLadder(config, latency) {
       failures = 0;
     }
     if (failures >= 2) {
-      for (const item of result) {
-        if (item.status === "Not tested" && item.targetMbps > target) {
-          item.status = "Skipped";
-        }
-      }
       break;
     }
   }
   return result;
 }
 
-function runWebSocketLevel(targetMbps, durationMs) {
+function runWebSocketLevel(targetMbps, durationMs, onProgress = null) {
   return new Promise((resolve, reject) => {
     const started = performance.now();
     const buckets = [];
@@ -902,6 +907,7 @@ function runWebSocketLevel(targetMbps, durationMs) {
         pushSeries("realtime", mbps);
         el.heroValue.textContent = fmt(mbps) + " Mbps";
         drawChart();
+        if (onProgress) onProgress(mbps);
         lastPaint = now;
       }
     };
@@ -1064,17 +1070,21 @@ function humanReport(report) {
   lines.push("- " + t("report.p99") + ": " + fmt(m.latency.p99Ms) + " ms");
   lines.push("- " + t("report.max") + ": " + fmt(m.latency.maxMs) + " ms");
   lines.push("- " + t("metric.jitter").toLowerCase() + ": " + fmt(m.latency.jitterMs) + " ms");
-  lines.push("");
-  lines.push(t("metric.download") + ":");
-  lines.push("- " + t("report.avg") + ": " + fmt(m.download.averageMbps) + " Mbps");
-  lines.push("- " + t("report.p10") + ": " + fmt(m.download.p10Mbps) + " Mbps");
-  lines.push("- " + t("report.p5") + ": " + fmt(m.download.p5Mbps) + " Mbps");
-  lines.push("- " + t("report.min1s") + ": " + fmt(m.download.min1sMbps) + " Mbps");
-  lines.push("");
-  lines.push(t("metric.upload") + ":");
-  lines.push("- " + t("report.avg") + ": " + fmt(m.upload.averageMbps) + " Mbps");
-  lines.push("- " + t("report.p10") + ": " + fmt(m.upload.p10Mbps) + " Mbps");
-  lines.push("- " + t("report.p5") + ": " + fmt(m.upload.p5Mbps) + " Mbps");
+  if (m.download) {
+    lines.push("");
+    lines.push(t("metric.download") + ":");
+    lines.push("- " + t("report.avg") + ": " + fmt(m.download.averageMbps) + " Mbps");
+    lines.push("- " + t("report.p10") + ": " + fmt(m.download.p10Mbps) + " Mbps");
+    lines.push("- " + t("report.p5") + ": " + fmt(m.download.p5Mbps) + " Mbps");
+    lines.push("- " + t("report.min1s") + ": " + fmt(m.download.min1sMbps) + " Mbps");
+  }
+  if (m.upload) {
+    lines.push("");
+    lines.push(t("metric.upload") + ":");
+    lines.push("- " + t("report.avg") + ": " + fmt(m.upload.averageMbps) + " Mbps");
+    lines.push("- " + t("report.p10") + ": " + fmt(m.upload.p10Mbps) + " Mbps");
+    lines.push("- " + t("report.p5") + ": " + fmt(m.upload.p5Mbps) + " Mbps");
+  }
   lines.push("");
   lines.push(t("report.realtime") + ":");
   report.bitrateLadder
@@ -1200,7 +1210,7 @@ function setStage(stage, text, rawText = false) {
 }
 
 function setButtons(disabled) {
-  [el.startButton, el.quickButton, el.fullButton].forEach((button) => {
+  [el.startButton, el.maxButton].forEach((button) => {
     button.disabled = disabled;
   });
   if (el.stopButton) el.stopButton.classList.toggle("hidden", !disabled);
@@ -1541,8 +1551,9 @@ function throughputLabel(p5, avg) {
 }
 
 function nearestLevel(value) {
-  let best = ladderLevels[0];
-  ladderLevels.forEach((level) => {
+  const levels = effectiveLadderLevels();
+  let best = levels[0];
+  levels.forEach((level) => {
     if (level <= value) {
       best = level;
     }
@@ -1551,7 +1562,7 @@ function nearestLevel(value) {
 }
 
 function nextLevel(value) {
-  return ladderLevels.find((level) => level > value) || null;
+  return effectiveLadderLevels().find((level) => level > value) || null;
 }
 
 function firstAbove(base, list) {

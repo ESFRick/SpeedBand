@@ -278,6 +278,7 @@ button { border: 0; cursor: pointer; }
   line-height: 1.35;
   overflow-wrap: break-word;
   word-break: break-word;
+  max-width: 160px;
 }
 
 .gauge-unit {
@@ -353,7 +354,7 @@ button { border: 0; cursor: pointer; }
 /* advanced panel */
 .advanced-panel {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
   padding: 18px;
   border-radius: 14px;
@@ -724,7 +725,7 @@ pre {
   .gauge-wrap { width: 240px; height: 240px; }
 
   .metrics-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
-  .advanced-panel { grid-template-columns: repeat(2, 1fr); }
+  .advanced-panel { grid-template-columns: repeat(3, 1fr); }
   .recommendation-grid { grid-template-columns: repeat(2, 1fr); }
 
   .report-buttons { flex-direction: column; width: 100%; }
