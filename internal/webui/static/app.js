@@ -1,17 +1,16 @@
 "use strict";
 
-const ALL_LADDER_LEVELS = [25, 50, 75, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500, 600, 700, 750, 800, 900, 1000, 1200, 1500, 2000, 2500, 5000, 10000];
+const ALL_LADDER_LEVELS = [25, 50, 75, 100, 120, 150, 180, 200, 250, 300, 350, 400, 500, 600, 700, 750, 800, 900, 1000, 1200, 1500, 2000, 2500, 5000, 10000, 12500, 20000, 25000, 40000, 100000];
+const ALL_LADDER_MAX = ALL_LADDER_LEVELS[ALL_LADDER_LEVELS.length - 1];
 
 function getMaxMbps() {
   const v = el && el.maxBitrateInput ? parseInt(el.maxBitrateInput.value, 10) : 500;
-  return (Number.isFinite(v) && v >= 100) ? v : 500;
+  return (Number.isFinite(v) && v >= 100) ? Math.min(v, ALL_LADDER_MAX) : 500;
 }
 
 function effectiveLadderLevels() {
   const max = getMaxMbps();
-  const levels = ALL_LADDER_LEVELS.filter(l => l <= max);
-  if (levels.length === 0 || levels[levels.length - 1] < max) levels.push(max);
-  return levels;
+  return ALL_LADDER_LEVELS.filter(l => l <= max);
 }
 const qs = (id) => document.getElementById(id);
 
