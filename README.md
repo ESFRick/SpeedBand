@@ -5,8 +5,6 @@
 [![Platform: Windows | Linux | macOS](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue)](https://github.com/ESFRick/SpeedBand/releases)
 [![Download](https://img.shields.io/github/v/release/ESFRick/SpeedBand?label=Download&color=brightgreen)](https://github.com/ESFRick/SpeedBand/releases/latest)
 
-**[English](README.md) | [Русский](README.ru.md)**
-
 Diagnose whether your LAN is stable enough for realtime streaming. Measures latency, jitter and low-percentile throughput via browser - no install on the second device, no telemetry.
 
 ![SpeedBand demo](docs/demo.gif)
@@ -74,12 +72,6 @@ SpeedBand runs as a single binary or `go run`. The second device only needs a br
 
 Download the binary for your platform from the [Releases page](https://github.com/ESFRick/SpeedBand/releases/latest) and run it.
 
-**Windows:** open a terminal in the folder with the downloaded file and run:
-
-```powershell
-.\speedband-windows-amd64.exe
-```
-
 **Linux:**
 
 ```bash
@@ -93,12 +85,11 @@ chmod +x speedband-linux-amd64
 chmod +x speedband-macos-arm64   # Apple Silicon
 ./speedband-macos-arm64
 
-# or for Intel Macs:
-chmod +x speedband-macos-amd64
+chmod +x speedband-macos-amd64 # Intel Macs:
 ./speedband-macos-amd64
 ```
 
-Open the LAN URL printed in the terminal on any device in the same network. No app install required on the second device - browser only.
+Open the LAN URL printed in the terminal on any device in the same network.
 
 ### Build from source
 
@@ -122,19 +113,6 @@ go build -o speedband ./cmd/speedband
 | `--port` | `8080` | Listen port |
 | `--open` | `false` | Auto-open browser on start |
 | `--debug` | `false` | Verbose logging |
-
----
-
-## Connecting from another device
-
-1. Start SpeedBand on the host machine.
-2. Use the LAN URL printed in the console, e.g. `http://192.168.1.25:8080`.
-3. If `.local` hostname does not resolve, use the numeric IP.
-4. On Meta Quest, open the URL in the headset browser.
-
-The console prints all LAN IP candidates and marks the primary guess. Docker, VM and VPN adapters are filtered or flagged where possible.
-
----
 
 ## Firewall
 
@@ -178,8 +156,6 @@ Quality labels:
 
 - **Download JSON** - saves report on the client device.
 - **Save to server** - sends report to the machine; saves a `.log` file in `reports/` under the server working directory.
-
-UI supports English and Russian. Reports use the language selected in the browser at save time.
 
 ---
 
